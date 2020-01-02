@@ -9,3 +9,4 @@ echo_server
 *.yy.c
 *.yy.h
 y.tab.*
+*.tab.*
