@@ -1,0 +1,11 @@
+# https://github.com/Lincong/simle-HTTP-server
+.idea
+Makefile
+cmake-build-debug/
+*.o
+example
+echo_client
+echo_server
+*.yy.c
+*.yy.h
+y.tab.*
