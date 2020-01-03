@@ -96,18 +96,27 @@ bool send_response(int efd, int fd) {
     }
     // remove fd when no data to write in LT mode
     if(left_to_write == 0) {
+        if(httpConnPtr->written_enabled) {
+            updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD);
+            httpConnPtr->written_enabled = false;
+        }
         httpConnMap.erase(fd);
-        close(fd);
+        //close(fd);
+        //cout << "fd "  << fd << " this time " << write_back << endl;
         return true;
     }
     if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-        updateEvents(efd, fd, EPOLLIN | EPOLLOUT, EPOLL_CTL_MOD);
+        if(!httpConnPtr->written_enabled) {
+            updateEvents(efd, fd, EPOLLIN | EPOLLOUT, EPOLL_CTL_MOD);
+            httpConnPtr->written_enabled = true;
+        }
         return false;
     }
+    /*
     if(!httpConnPtr->written_enabled) {
         httpConnPtr->written_enabled = true;
         updateEvents(efd, fd, EPOLLIN | EPOLLOUT, EPOLL_CTL_MOD);
-    }
+    }*/
     if (n <= 0) {
         printf("write error for %d: %d %s\n", fd, errno, strerror(errno));
         close(fd);
@@ -177,7 +186,7 @@ void handleRead(int efd, int fd) {
             if(found == string::npos) {
                 cout << "can't parsed yet" << endl;
             } else {
-                RequestNew* req = parseNew(httpConnPtr->buf.c_str(), httpConnPtr->buf.size());
+                Request* req = parseNew(httpConnPtr->buf.c_str(), httpConnPtr->buf.size());
                 if(req != nullptr) {
                     write_back = httpConnPtr->buf;
                 } else {
@@ -188,11 +197,17 @@ void handleRead(int efd, int fd) {
             }
         }
     }
-    if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    if(errno == EAGAIN || errno == EWOULDBLOCK) {
         return;
-    exit_if(n < 0, "read error! ");
-    printf("fd %d closed\n", fd);
-    close(fd);
+    }
+    if (n <= 0) {
+        printf("error no: %d error msg %s\n", errno, strerror(errno));
+        close(fd);
+        httpConnMap.erase(fd);
+    }
+    //exit_if(n < 0, "read error! ");
+    //printf("fd %d closed\n", fd);
+    //close(fd);
 }
 
 int handleTimeout(int efd, int tfd) {
