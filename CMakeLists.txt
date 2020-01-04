@@ -9,3 +9,4 @@ target_link_libraries(http_server parser_lib)
 
 # Ref:
 # https://stackoverflow.com/questions/2491421/cmake-command-syntax-question
+# https://github.com/yedf/handy/blob/master/raw-examples/epoll.cc
